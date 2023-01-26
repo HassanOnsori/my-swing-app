@@ -25,3 +25,28 @@ jobs:
 
       - name: Test with Maven
         run: mvn test
+
+      - name: Install SonarQube Scanner
+        run: sudo apt-get install sonar-scanner
+
+      - name: Export SonarQube properties
+        run: |
+          echo "sonar.host.url=${{ secrets.SONAR_HOST_URL }}" > sonar-scanner.properties
+          echo "sonar.login=${{ secrets.SONAR_TOKEN }}" >> sonar-scanner.properties
+          echo "sonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}" >> sonar-scanner.properties
+          echo "sonar.projectName=${{ secrets.SONAR_PROJECT_NAME }}" >> sonar-scanner.properties
+          echo "sonar.projectVersion=1.0" >> sonar-scanner.properties
+          echo "sonar.sources=src" >> sonar-scanner.properties
+          echo "sonar.tests=src/test" >> sonar-scanner.properties
+          echo "sonar.java.binaries=target/classes" >> sonar-scanner.properties
+          echo "sonar.java.test.binaries=target/test-classes" >> sonar-scanner.properties
+        shell: bash
+        env:
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
+          SONAR_PROJECT_NAME: ${{ secrets.SONAR_PROJECT_NAME }}
+
+      - name: Run SonarQube Scanner
+        run: sonar-scanner
+
