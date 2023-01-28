@@ -12,6 +12,8 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
 
       - name: Set up JDK
         uses: actions/setup-java@v3
@@ -26,27 +28,23 @@ jobs:
       - name: Test with Maven
         run: mvn test
 
-      - name: Install SonarQube Scanner
-        run: sudo apt-get install sonar-scanner
-
-      - name: Export SonarQube properties
-        run: |
-          echo "sonar.host.url=${{ secrets.SONAR_HOST_URL }}" > sonar-scanner.properties
-          echo "sonar.login=${{ secrets.SONAR_TOKEN }}" >> sonar-scanner.properties
-          echo "sonar.projectKey=${{ secrets.SONAR_PROJECT_KEY }}" >> sonar-scanner.properties
-          echo "sonar.projectName=${{ secrets.SONAR_PROJECT_NAME }}" >> sonar-scanner.properties
-          echo "sonar.projectVersion=1.0" >> sonar-scanner.properties
-          echo "sonar.sources=src" >> sonar-scanner.properties
-          echo "sonar.tests=src/test" >> sonar-scanner.properties
-          echo "sonar.java.binaries=target/classes" >> sonar-scanner.properties
-          echo "sonar.java.test.binaries=target/test-classes" >> sonar-scanner.properties
-        shell: bash
+      - name: Cache SonarQube packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.sonar/cache
+          key: ${{ runner.os }}-sonar
+          restore-keys: ${{ runner.os }}-sonar
+      - name: Cache Maven packages
+        uses: actions/cache@v1
+        with:
+          path: ~/.m2
+          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+          restore-keys: ${{ runner.os }}-m2
+      - name: Build and analyze
         env:
-          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-          SONAR_PROJECT_KEY: ${{ secrets.SONAR_PROJECT_KEY }}
-          SONAR_PROJECT_NAME: ${{ secrets.SONAR_PROJECT_NAME }}
+          SONAR_HOST_URL: ${{ secrets.SONAR_HOST_URL }}
+        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=my-swing-app
 
-      - name: Run SonarQube Scanner
-        run: sonar-scanner
 
